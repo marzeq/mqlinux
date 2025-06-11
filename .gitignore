@@ -3,6 +3,6 @@ rootfs
 *.tar.xz
 */*-*
 bzImage
-init.cpio
+init.cpio*
 build.done
 install
