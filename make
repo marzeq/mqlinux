@@ -36,6 +36,23 @@ prepareRootfs() {
   done
 }
 
+createUser() {
+  cd rootfs
+
+  echo "root:x:0:0:root:/root:/bin/bash" > etc/passwd
+  echo "root:x:0:" > etc/group
+
+  local rootpswd="root"
+  local pswdhash=$(echo -n "$rootpswd" | openssl passwd -6 -stdin)
+  local pswdepoch=$(( $(date +%s) / 86400 )) 
+  cat > etc/shadow <<EOF
+root:$pswdhash:$pswdepoch::::::
+EOF
+  chmod 600 etc/shadow
+
+  echo -e "passwd: files\nshadow: files\ngroup: files" > etc/nsswitch.conf
+}
+
 createInitramfs() {
   cd rootfs
   find . | cpio -H newc -o > $ROOT_DIR/init.cpio
@@ -230,6 +247,7 @@ INSTALL_ORDER=(
 
 main() {
   prepareRootfs
+  createUser
 
   for package in "${INSTALL_ORDER[@]}"; do
     cd "$ROOT_DIR"
