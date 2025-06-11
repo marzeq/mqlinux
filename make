@@ -292,18 +292,13 @@ setupAuthFiles() {
 
   echo "root:x:0:0:root:/root:/bin/sh" > etc/passwd
   echo "root:x:0:root" > etc/group
-  echo "root::0:0:99999:7:::" > etc/shadow
-  chmod 600 etc/shadow
-
-  cat > etc/nsswitch.conf <<EOF
-passwd: files
-group: files
-shadow: files
-hosts: files dns
-networks: files
-protocols: files
-services: files
+  ROOT_PASSWORD="root"
+  PASSWORD_HASH=$(echo -n "$ROOT_PASSWORD" | openssl passwd -6 -stdin)
+  touch etc/shadow
+  cat > etc/shadow <<EOF
+root::$PASSWORD_HASH:0:99999:7:::
 EOF
+  chmod 600 etc/shadow
 
   cd $SCRIPT_DIR
 }
@@ -359,8 +354,14 @@ setupOpenRC() {
 
   mkdir -p etc/init.d
   touch etc/fstab etc/inittab
+  cat > etc/inittab <<EOF
+# /etc/inittab for OpenRC
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::default:/sbin/openrc default
+EOF
   unlink sbin/init || true
-  ln -s ./openrc-init sbin/init
+  ln -s /usr/bin/openrc-init sbin/init
 
   cat > etc/fstab <<EOF
 proc /proc proc defaults 0 0
