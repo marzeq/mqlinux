@@ -1,0 +1,82 @@
+#!/bin/bash
+NAME="openrc"
+VERSION="0.62.2"
+TARBALL_URL="https://github.com/OpenRC/openrc/archive/refs/tags/$VERSION.tar.gz"
+
+build() {
+  meson setup build \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    -Dpam=false
+  meson compile -C build -j"$JOBS"
+}
+
+install() {
+  meson install -C build --destdir "$INSTALLDIR"
+}
+
+configure() {
+  cd $ROOT_DIR/rootfs
+
+  unlink sbin/init || true
+  ln -s /usr/bin/openrc-init sbin/init
+
+  mkdir -p etc/init.d var/cache/rc run/openrc etc/runlevels/{boot,sysinit,default,shutdown} proc sys
+  
+  cat > "proc/filesystems" <<EOF
+nodev	sysfs
+nodev	rootfs
+nodev	ramfs
+nodev	bdev
+nodev	proc
+nodev	cgroup
+nodev	cgroup2
+nodev	tmpfs
+nodev	devtmpfs
+nodev	debugfs
+nodev	securityfs
+nodev	sockfs
+nodev	pipefs
+nodev	devpts
+nodev	hugetlbfs
+nodev	pstore
+nodev	mqueue
+nodev	autofs
+EOF
+
+  touch etc/fstab etc/inittab
+  cat > etc/inittab <<EOF
+# /etc/inittab for OpenRC
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::wait:/sbin/openrc default
+::shutdown:/sbin/openrc shutdown
+EOF
+
+  cat > etc/fstab <<EOF
+# <file system> <mount point> <type> <options> <dump> <pass>
+proc /proc proc defaults 0 0
+sysfs /sys sysfs defaults 0 0
+devtmpfs /dev devtmpfs defaults 0 0
+tmpfs /tmp tmpfs defaults 0 0
+EOF
+
+  cd etc/init.d
+  for n in {0..12}; do
+    ln -sf agetty agetty.tty$n
+    ln -sf "/etc/init.d/agetty.tty$n" "$ROOT_DIR/rootfs/etc/runlevels/default/agetty.tty$n"
+  done
+  cd "$ROOT_DIR/rootfs"
+
+  cd "etc/runlevels"
+  ln -s /etc/init.d/udev sysinit/ || true
+  ln -s /etc/init.d/udev-trigger sysinit/ || true
+  ln -s /etc/init.d/devfs sysinit/ || true
+  ln -s /etc/init.d/dmesg sysinit/ || true
+  ln -s /etc/init.d/loopback boot/ || true
+  ln -s /etc/init.d/hostname boot/ || true
+  ln -s /etc/init.d/sysfs boot/ || true
+  ln -s /etc/init.d/modules boot/ || true
+  ln -s /etc/init.d/hwclock boot/ || true
+}

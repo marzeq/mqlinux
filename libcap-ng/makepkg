@@ -1,0 +1,19 @@
+#!/bin/bash
+NAME="libcap-ng"
+VERSION="0.8.5"
+TARBALL_URL="https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v$VERSION.tar.gz"
+
+build() {
+  ./autogen.sh
+  ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
+
+  make -j"$JOBS"
+}
+
+install() {
+  make install DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}

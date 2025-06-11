@@ -1,0 +1,26 @@
+#!/bin/bash
+NAME="glibc"
+VERSION="2.41"
+TARBALL_URL="https://ftpmirror.gnu.org/glibc/glibc-$VERSION.tar.xz"
+
+build() {
+  mkdir -p build
+  cd build
+
+  ../configure --prefix="/usr" \
+    --libdir="/usr/lib" \
+    --libexecdir="/usr/lib" \
+    --enable-kernel=6.15 \
+    --with-headers="$ROOT_DIR/rootfs/usr/include"
+
+  make -j"$JOBS"
+}
+
+install() {
+  cd build
+  make install DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}

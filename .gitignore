@@ -1,4 +1,8 @@
-*
-!.gitignore
-!make
-!boot
+rootfs
+*.tar.gz
+*.tar.xz
+*/*-*
+bzImage
+init.cpio
+build.done
+install

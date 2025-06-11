@@ -1,0 +1,18 @@
+#!/bin/bash
+NAME="procps"
+VERSION="4.0.5"
+TARBALL_URL="https://gitlab.com/procps-ng/procps/-/archive/v$VERSION/procps-v$VERSION.tar.gz"
+
+build() {
+  ./autogen.sh
+  ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
+  make -j"$JOBS"
+}
+
+install() {
+  make install DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}

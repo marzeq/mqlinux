@@ -1,0 +1,21 @@
+#!/bin/bash
+NAME="ncurses"
+VERSION="6.5"
+TARBALL_URL="https://ftpmirror.gnu.org/ncurses/ncurses-$VERSION.tar.gz"
+
+build() {
+  ./configure --prefix=/usr \
+    --without-cxx-binding \
+    --with-shared \
+    --with-versioned-syms
+
+  make -j"$JOBS"
+}
+
+install() {
+  make install DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}

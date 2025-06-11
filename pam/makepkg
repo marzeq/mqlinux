@@ -1,0 +1,63 @@
+#!/bin/bash
+NAME="pam"
+VERSION="1.7.0"
+TARBALL_URL="https://github.com/linux-pam/linux-pam/releases/download/v$VERSION/Linux-PAM-$VERSION.tar.xz"
+
+build() {
+  meson setup build \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --buildtype=release \
+    --libdir=/usr/lib \
+    -Dselinux=disabled \
+    -Ddocs=disabled
+
+  meson compile -C build -j"$JOBS"
+}
+
+install() {
+  meson install -C build --destdir "$INSTALLDIR"
+}
+
+configure() {
+    cd $ROOT_DIR/rootfs
+
+  mkdir -p etc/pam.d
+
+  cat > etc/pam.d/login <<EOF
+#%PAM-1.0
+auth     required pam_permit.so
+account  required pam_permit.so
+password required pam_permit.so
+session  required pam_permit.so
+EOF
+
+  cat > etc/pam.d/other <<EOF
+#%PAM-1.0
+auth     required pam_permit.so
+account  required pam_permit.so
+password required pam_permit.so
+session  required pam_permit.so
+EOF
+
+  cat > etc/pam.d/agetty <<EOF
+#%PAM-1.0
+auth     required  pam_permit.so
+account  required  pam_permit.so
+password required  pam_permit.so
+session  required  pam_permit.so
+EOF
+
+
+  echo "root:x:0:0::/root:/usr/bin/bash" > etc/passwd
+  echo "root:x:0:root" > etc/group
+  ROOT_PASSWORD="root"
+  PASSWORD_HASH=$(echo -n "$ROOT_PASSWORD" | openssl passwd -6 -stdin)
+  touch etc/shadow
+  cat > etc/shadow <<EOF
+root:$PASSWORD_HASH:20249::::::
+EOF
+  chmod 600 etc/shadow
+
+  echo -e "passwd: files\nshadow: files\ngroup: files" > etc/nsswitch.conf
+}
