@@ -24,22 +24,35 @@ GNU_LIBC_URL="https://ftpmirror.gnu.org/glibc/glibc-$GLIBC_VERSION.tar.xz"
 LIBCAP_VERSION="2.76"
 LIBCAP_URL="https://git.kernel.org/pub/scm/libs/libcap/libcap.git/snapshot/libcap-$LIBCAP_VERSION.tar.gz"
 
+LICAP_NG_VERSION="0.8.5"
+LICAP_NG_URL="https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v$LICAP_NG_VERSION.tar.gz"
+
 UTIL_LINUX_VERSION="2.41"
 UTIL_LINUX_URL="https://github.com/util-linux/util-linux/archive/refs/tags/v$UTIL_LINUX_VERSION.tar.gz"
+
+NCURSES_VERSION="6.5"
+NCURSES_URL="https://ftpmirror.gnu.org/ncurses/ncurses-$NCURSES_VERSION.tar.gz"
+
+PAM_VERSION="1.7.0"
+PAM_URL="https://github.com/linux-pam/linux-pam/releases/download/v$PAM_VERSION/Linux-PAM-$PAM_VERSION.tar.xz"
+
+LIBAUDIT_VERSION="4.0.5"
+LIBAUDIT_URL="https://github.com/linux-audit/audit-userspace/archive/refs/tags/v$LIBAUDIT_VERSION.tar.gz"
 
 JOBS=$(nproc)
 
 prepareRootfs() {
+  set -x
   mkdir rootfs
   mkdir rootfs/{dev,etc,proc,sys,tmp,usr,run,var}
-  mkdir -p rootfs/{root,home,mnt,lib/modules}
   mkdir -p rootfs/usr/{bin,lib,share,include}
-  chmod 1777 rootfs/tmp rootfs/run
-  ln -s lib rootfs/usr/lib64
+  ln -s usr/lib rootfs/lib
   ln -s usr/bin rootfs/bin
   ln -s usr/bin rootfs/sbin
-  ln -s usr/lib rootfs/lib
   ln -s usr/lib64 rootfs/lib64
+  mkdir -p rootfs/{root,home,mnt,lib/modules}
+  chmod 1777 rootfs/tmp rootfs/run
+  ln -s lib rootfs/usr/lib64
 
   sudo mknod -m 666 rootfs/dev/null c 1 3
   sudo mknod -m 666 rootfs/dev/zero c 1 5
@@ -59,6 +72,7 @@ prepareRootfs() {
 }
 
 buildKernel() {
+  set -x
   mkdir -p linux
   cd linux
   if [ ! -f "linux.tar.xz" ]; then
@@ -75,6 +89,7 @@ buildKernel() {
 }
 
 installHeaders() {
+  set -x
   mkdir -p linux
   cd linux
   if [ ! -f "linux.tar.xz" ]; then
@@ -89,6 +104,7 @@ installHeaders() {
 }
 
 buildBusybox() {
+  set -x
   mkdir -p busybox
   cd busybox
   if [ ! -f "busybox.tar.gz" ]; then
@@ -111,6 +127,7 @@ buildBusybox() {
 }
 
 buildKbd() {
+  set -x
   mkdir -p kbd
   cd kbd
   if [ ! -f "kbd.tar.xz" ]; then
@@ -119,13 +136,14 @@ buildKbd() {
     mv kbd-* kbd-src
   fi
   cd kbd-src
-  ./configure --prefix=/usr
+  ./configure --prefix=/usr --libdir=/usr/lib
   make -j"$JOBS"
   make install DESTDIR="$SCRIPT_DIR/rootfs"
   cd $SCRIPT_DIR
 }
 
 buildProcps() {
+  set -x
   mkdir -p procps
   cd procps
   if [ ! -f "procps.tar.gz" ]; then
@@ -135,7 +153,7 @@ buildProcps() {
   fi
   cd procps-src
   ./autogen.sh
-  ./configure --prefix=/usr --sysconfdir=/etc
+  ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
   make -j"$JOBS"
 
   # unlink busybox symlinks for process management, as procps provides these
@@ -162,6 +180,7 @@ buildProcps() {
 }
 
 buildLibcap() {
+  set -x
   mkdir -p libcap
   cd libcap
   if [ ! -f "libcap.tar.gz" ]; then
@@ -175,7 +194,26 @@ buildLibcap() {
   cd $SCRIPT_DIR
 }
 
+buildLibcapNg() {
+  set -x
+  mkdir -p libcap-ng
+  cd libcap-ng
+  if [ ! -f "libcap-ng.tar.gz" ]; then
+    wget "$LICAP_NG_URL" -O libcap-ng.tar.gz
+    tar -xf libcap-ng.tar.gz
+    mv libcap-ng-* libcap-ng-src
+  fi
+  cd libcap-ng-src
+  ./autogen.sh
+  ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
+
+  make -j"$JOBS"
+  make install DESTDIR="$SCRIPT_DIR/rootfs"
+  cd $SCRIPT_DIR
+}
+
 buildUtilLinux() {
+  set -x
   mkdir -p util-linux
   cd util-linux
   if [ ! -f "util-linux.tar.gz" ]; then
@@ -188,13 +226,166 @@ buildUtilLinux() {
   ./configure --prefix=/usr \
     --sysconfdir=/etc \
     --libdir=/usr/lib \
-    --disable-nls
+    --disable-nls \
+    --without-systemd \
+    --without-python
+
   make -j"$JOBS"
   sudo make install-strip DESTDIR="$SCRIPT_DIR/rootfs"
   cd $SCRIPT_DIR
 }
 
+buildNcurses() {
+  set -x
+  mkdir -p ncurses
+  cd ncurses
+  if [ ! -f "ncurses.tar.gz" ]; then
+    wget "$NCURSES_URL" -O ncurses.tar.gz
+    tar -xf ncurses.tar.gz
+    mv ncurses-* ncurses-src
+  fi
+  cd ncurses-src
+  ./configure --prefix=/usr \
+    --without-cxx-binding \
+    --with-shared
+
+  make -j"$JOBS"
+  mkdir -p ../install
+  make install DESTDIR="$SCRIPT_DIR/rootfs"
+  cd $SCRIPT_DIR
+}
+
+setupPamConfig() {
+  cd $SCRIPT_DIR/rootfs
+
+  mkdir -p etc/pam.d
+
+  cat > etc/pam.d/login <<EOF
+#%PAM-1.0
+auth      required  pam_unix.so nullok
+account   required  pam_unix.so
+password  required  pam_unix.so
+session   required  pam_unix.so
+EOF
+
+  cat > etc/pam.d/other <<EOF
+#%PAM-1.0
+auth     required     pam_deny.so
+account  required     pam_deny.so
+password required     pam_deny.so
+session  required     pam_deny.so
+EOF
+
+  cat > etc/pam.d/agetty <<EOF
+#%PAM-1.0
+auth      required  pam_unix.so nullok
+account   required  pam_unix.so
+password  required  pam_unix.so
+session   required  pam_unix.so
+EOF
+
+  cd $SCRIPT_DIR
+}
+
+setupAuthFiles() {
+  cd $SCRIPT_DIR/rootfs
+
+  echo "root:x:0:0:root:/root:/bin/sh" > etc/passwd
+  echo "root:x:0:root" > etc/group
+  echo "root::0:0:99999:7:::" > etc/shadow
+  chmod 600 etc/shadow
+
+  cat > etc/nsswitch.conf <<EOF
+passwd: files
+group: files
+shadow: files
+hosts: files dns
+networks: files
+protocols: files
+services: files
+EOF
+
+  cd $SCRIPT_DIR
+}
+
+buildPam() {
+  set -x
+  mkdir -p pam
+  cd pam
+  if [ ! -f "pam.tar.xz" ]; then
+    wget "$PAM_URL" -O pam.tar.xz
+    tar -xf pam.tar.xz
+    mv Linux-PAM-* pam-src
+  fi
+  cd pam-src
+  meson setup build \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --buildtype=release \
+    --libdir=/usr/lib \
+    -Dselinux=disabled \
+    -Ddocs=disabled
+
+  meson compile -C build -j"$JOBS"
+  meson install -C build --destdir $SCRIPT_DIR/rootfs
+  cd $SCRIPT_DIR
+
+  setupPamConfig
+  setupAuthFiles
+}
+
+buildLibAudit() {
+  set -x
+  mkdir -p libaudit
+  cd libaudit
+  if [ ! -f "libaudit.tar.gz" ]; then
+    wget "$LIBAUDIT_URL" -O libaudit.tar.gz
+    tar -xf libaudit.tar.gz
+    mv audit-userspace-* libaudit-src
+  fi
+  cd libaudit-src
+  autoreconf -f --install
+  ./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --libdir=/usr/lib
+
+  make -j"$JOBS"
+  make install DESTDIR="$SCRIPT_DIR/rootfs"
+  cd $SCRIPT_DIR
+}
+
+setupOpenRC() {
+  cd $SCRIPT_DIR/rootfs
+
+  mkdir -p etc/init.d
+  touch etc/fstab etc/inittab
+  unlink sbin/init || true
+  ln -s ./openrc-init sbin/init
+
+  cat > etc/fstab <<EOF
+proc /proc proc defaults 0 0
+sysfs /sys sysfs defaults 0 0
+tmpfs /run tmpfs nosuid,nodev 0 0
+tmpfs /run/lock tmpfs nosuid,nodev 0 0
+tmpfs /run/openrc tmpfs nosuid,nodev 0 0
+tmpfs /tmp tmpfs nosuid,nodev 0 0
+EOF
+
+  mkdir -p var/cache/rc
+  mkdir -p run/openrc
+
+  mkdir -p "etc/runlevels/default"
+  cd etc/init.d
+  for n in $(seq 1 6); do
+    ln -sf agetty agetty.tty$n
+    ln -sf "/etc/init.d/agetty.tty$n" "$SCRIPT_DIR/rootfs/etc/runlevels/default/agetty.tty$n"
+  done
+
+  cd $SCRIPT_DIR
+}
+
 buildOpenRC() {
+  set -x
   mkdir -p openrc
   cd openrc
   if [ ! -f "openrc.tar.gz" ]; then
@@ -210,49 +401,23 @@ buildOpenRC() {
     -Dpam=false
   meson compile -C build -j"$JOBS"
   meson install -C build --destdir $SCRIPT_DIR/rootfs
-  cd $SCRIPT_DIR/rootfs
-
-  mkdir -p etc/init.d
-  touch etc/fstab etc/inittab
-  unlink sbin/init || true
-  ln -s ./openrc-init sbin/init
-
-  cat > etc/init.d/rcS <<EOF
-#!/bin/sh
-mount -t proc none /proc
-mount -t sysfs none /sys
-mount -t tmpfs -o nosuid,nodev tmpfs /run
-mkdir -p /run/lock /run/openrc
-
-exec /usr/bin/rc default
-EOF
-  chmod +x etc/init.d/rcS
-
-  # we handle mounting of proc, sys, and tmpfs etc in rcS
-  echo "" > etc/fstab
-
-  echo "root:x:0:0:root:/root:/bin/sh" > etc/passwd
-  echo "root:x:0:" > etc/group
-  echo "uucp:x:10:" >> etc/group
-
-  mkdir -p var/cache/rc
-
-  mkdir -p $SCRIPT_DIR/rootfs/etc/runlevels/default
-  for n in $(seq 1 6); do
-    ln -s /etc/init.d/agetty $SCRIPT_DIR/rootfs/etc/init.d/agetty.tty$n
-    ln -s /etc/init.d/agetty.tty$n $SCRIPT_DIR/rootfs/etc/runlevels/default/
-  done
 
   cd $SCRIPT_DIR
 
+  setupOpenRC
+  
   buildKbd
-  # needed because busybox provides an outdated version of sysctl
   buildProcps
   buildLibcap
+  buildLibcapNg
   buildUtilLinux
+  buildNcurses
+  buildPam
+  buildLibAudit
 }
 
 buildGlibc() {
+  set -x
   mkdir -p glibc
   cd glibc
   if [ ! -f "glibc.tar.xz" ]; then
@@ -272,11 +437,10 @@ buildGlibc() {
 
   make -j"$JOBS"
   make install DESTDIR="$SCRIPT_DIR/rootfs"
-
-  cd $SCRIPT_DIR
 }
 
 createInitramfs() {
+  set -x
   cd rootfs
   find . | cpio -H newc -o > $SCRIPT_DIR/init.cpio
   cd $SCRIPT_DIR
@@ -286,9 +450,9 @@ if [ "$#" -eq 0 ]; then
   prepareRootfs
   buildKernel
   installHeaders
+  buildGlibc
   buildBusybox
   buildOpenRC
-  buildGlibc
   createInitramfs
 else
   for arg in "$@"; do
@@ -320,8 +484,8 @@ else
       prepareRootfs
       installHeaders
       buildBusybox
-      buildOpenRC
       buildGlibc
+      buildOpenRC
       createInitramfs
     else
       echo "Unknown argument: $arg"
@@ -329,3 +493,4 @@ else
     fi
   done
 fi
+
