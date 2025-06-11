@@ -262,26 +262,26 @@ setupPamConfig() {
 
   cat > etc/pam.d/login <<EOF
 #%PAM-1.0
-auth      required  pam_unix.so nullok
-account   required  pam_unix.so
-password  required  pam_unix.so
-session   required  pam_unix.so
+auth     required pam_permit.so
+account  required pam_permit.so
+password required pam_permit.so
+session  required pam_permit.so
 EOF
 
   cat > etc/pam.d/other <<EOF
 #%PAM-1.0
-auth     required     pam_deny.so
-account  required     pam_deny.so
-password required     pam_deny.so
-session  required     pam_deny.so
+auth     required pam_permit.so
+account  required pam_permit.so
+password required pam_permit.so
+session  required pam_permit.so
 EOF
 
   cat > etc/pam.d/agetty <<EOF
 #%PAM-1.0
-auth      required  pam_unix.so nullok
-account   required  pam_unix.so
-password  required  pam_unix.so
-session   required  pam_unix.so
+auth     required  pam_permit.so
+account  required  pam_permit.so
+password required  pam_permit.so
+session  required  pam_permit.so
 EOF
 
   cd $SCRIPT_DIR
@@ -290,13 +290,13 @@ EOF
 setupAuthFiles() {
   cd $SCRIPT_DIR/rootfs
 
-  echo "root:x:0:0:root:/root:/bin/sh" > etc/passwd
+  echo "root:x:0:0::/root:/usr/bin/bash" > etc/passwd
   echo "root:x:0:root" > etc/group
   ROOT_PASSWORD="root"
   PASSWORD_HASH=$(echo -n "$ROOT_PASSWORD" | openssl passwd -6 -stdin)
   touch etc/shadow
   cat > etc/shadow <<EOF
-root::$PASSWORD_HASH:0:99999:7:::
+root:$PASSWORD_HASH:20249::::::
 EOF
   chmod 600 etc/shadow
 
