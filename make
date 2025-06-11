@@ -42,14 +42,6 @@ createUser() {
   echo "root:x:0:0:root:/root:/bin/bash" > etc/passwd
   echo "root:x:0:" > etc/group
 
-  local rootpswd="root"
-  local pswdhash=$(echo -n "$rootpswd" | openssl passwd -6 -stdin)
-  local pswdepoch=$(( $(date +%s) / 86400 )) 
-  cat > etc/shadow <<EOF
-root:$pswdhash:$pswdepoch::::::
-EOF
-  chmod 600 etc/shadow
-
   echo -e "passwd: files\nshadow: files\ngroup: files" > etc/nsswitch.conf
 }
 
