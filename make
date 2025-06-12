@@ -42,7 +42,10 @@ createUser() {
   cd rootfs
   touch etc/group etc/passwd etc/shadow
   sudo chroot . /bin/sh -c "addgroup -g 0 root"
-  sudo chroot . /bin/sh -c "adduser -D -u 0 -G root -s /bin/sh -h /root root"
+  sudo chroot . /bin/sh -c "adduser -g '' -D -u 0 -G root -s /bin/sh -h /root root"
+  ROOTPSWD="root"
+  sudo chroot . /bin/sh -c "echo root:$ROOTPSWD | chpasswd"
+  chmod 600 etc/shadow
   cd "$ROOT_DIR"
 }
 
