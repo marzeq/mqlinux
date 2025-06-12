@@ -20,7 +20,6 @@ install() {
 configure() {
   cd $ROOT_DIR/rootfs
 
-  unlink sbin/init || true
   ln -s /usr/bin/openrc-init sbin/init
 
   mkdir -p etc/init.d var/cache/rc run/openrc etc/runlevels/{boot,sysinit,default,shutdown} proc sys

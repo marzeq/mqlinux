@@ -26,18 +26,10 @@ configure() {
   for service in login su sudo agetty other; do
     cat > etc/pam.d/$service <<EOF
     #%PAM-1.0
-    auth     include  system-auth
-    account  include  system-auth
-    password include  system-auth
-    session  include  system-auth
+    auth     include  pam_permit.so 
+    account  include  pam_permit.so
+    password include  pam_permit.so
+    session  include  pam_permit.so
 EOF
 done
-
-  cat > etc/pam.d/system-auth <<EOF
-#%PAM-1.0
-auth     required pam_permit.so
-account  required pam_permit.so
-password required pam_permit.so
-session  required pam_permit.so
-EOF
 }

@@ -13,11 +13,13 @@ prepareRootfs() {
   mkdir -p rootfs/usr/{bin,lib,share,include}
   ln -s usr/lib rootfs/lib
   ln -s usr/bin rootfs/bin
-  ln -s usr/bin rootfs/sbin
+  ln -s ./bin rootfs/usr/sbin
+  ln -s usr/sbin rootfs/sbin
+  ln -s ./lib rootfs/usr/lib64
   ln -s usr/lib64 rootfs/lib64
+  ln -s ../etc rootfs/usr/etc
   mkdir -p rootfs/{root,home,mnt,lib/modules}
   chmod 1777 rootfs/tmp rootfs/run
-  ln -s lib rootfs/usr/lib64
 
   sudo mknod -m 666 rootfs/dev/null c 1 3
   sudo mknod -m 666 rootfs/dev/zero c 1 5
@@ -38,15 +40,10 @@ prepareRootfs() {
 
 createUser() {
   cd rootfs
-  echo "root:x:0:0::/root:/usr/bin/bash" > etc/passwd
-  echo "root:x:0:root" > etc/group
-  ROOT_PASSWORD="root"
-  PASSWORD_HASH=$(echo -n "$ROOT_PASSWORD" | openssl passwd -6 -stdin)
-  touch etc/shadow
-  cat > etc/shadow <<EOF
-root:$PASSWORD_HASH:20249::::::
-EOF
-  chmod 600 etc/shadow
+  touch etc/group etc/passwd etc/shadow
+  sudo chroot . /bin/sh -c "addgroup -g 0 root"
+  sudo chroot . /bin/sh -c "adduser -D -u 0 -G root -s /bin/sh -h /root root"
+  cd "$ROOT_DIR"
 }
 
 createInitramfs() {
@@ -243,7 +240,6 @@ INSTALL_ORDER=(
 
 main() {
   prepareRootfs
-  createUser
 
   for package in "${INSTALL_ORDER[@]}"; do
     cd "$ROOT_DIR"
@@ -262,6 +258,7 @@ main() {
     configurePackage "$name" "$version" "$tarball_url"
   done
 
+  createUser
   createInitramfs
 }
 
