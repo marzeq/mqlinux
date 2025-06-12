@@ -38,11 +38,15 @@ prepareRootfs() {
 
 createUser() {
   cd rootfs
-
-  echo "root:x:0:0:root:/root:/bin/bash" > etc/passwd
-  echo "root:x:0:" > etc/group
-
-  echo -e "passwd: files\nshadow: files\ngroup: files" > etc/nsswitch.conf
+  echo "root:x:0:0::/root:/usr/bin/bash" > etc/passwd
+  echo "root:x:0:root" > etc/group
+  ROOT_PASSWORD="root"
+  PASSWORD_HASH=$(echo -n "$ROOT_PASSWORD" | openssl passwd -6 -stdin)
+  touch etc/shadow
+  cat > etc/shadow <<EOF
+root:$PASSWORD_HASH:20249::::::
+EOF
+  chmod 600 etc/shadow
 }
 
 createInitramfs() {
@@ -225,9 +229,7 @@ configurePackage() {
 INSTALL_ORDER=(
   "linux"
   "glibc"
-  "busybox"
   "ncurses"
-  "openrc"
   "procps" 
   "libcap"
   "libcap-ng"
@@ -235,6 +237,8 @@ INSTALL_ORDER=(
   "pam"
   "util-linux"
   "kbd"
+  "busybox"
+  "openrc"
 )
 
 main() {
