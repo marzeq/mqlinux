@@ -1,0 +1,26 @@
+#!/bin/bash
+NAME="busybox"
+VERSION="1.36.1"
+TARBALL_URL="https://github.com/mirror/busybox/archive/refs/tags/$(echo "$VERSION" | sed 's/\./_/g').tar.gz"
+
+build() {
+  make defconfig
+
+  sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/' .config
+  sed -i 's/CONFIG_TC=y/CONFIG_TC=n/' .config
+  sed -i 's/# CONFIG_BASH_IS_ASH is not set/CONFIG_BASH_IS_ASH=y/' .config
+  sed -i 's/CONFIG_BASH_IS_NONE=y/CONFIG_BASH_IS_NONE=n/' .config
+
+  make -j"$JOBS"
+}
+
+install() {
+  make CONFIG_PREFIX="$INSTALLDIR" install
+
+  unlink $INSTALLDIR/sbin/sysctl  || true
+  rm $INSTALLDIR/linuxrc
+}
+
+configure() {
+  :
+}

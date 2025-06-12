@@ -1,0 +1,21 @@
+#!/bin/bash
+NAME="linux"
+VERSION="6.15.2"
+TARBALL_URL="https://cdn.kernel.org/pub/linux/kernel/v$(echo "$VERSION" | cut -d. -f1).x/linux-$VERSION.tar.xz"
+
+build() {
+  make defconfig
+  scripts/config --enable CONFIG_64BIT
+
+  make -j"$JOBS"
+}
+
+install() {
+  cp arch/x86/boot/bzImage "$ROOT_DIR"
+  mkdir -p "$INSTALLDIR/usr"
+  make headers_install INSTALL_HDR_PATH="$INSTALLDIR/usr"
+}
+
+configure() {
+  :
+}

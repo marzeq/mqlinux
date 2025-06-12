@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 set -e
 
 export ROOT_DIR=$(dirname "$(readlink -f "$0")")
@@ -39,7 +38,6 @@ prepareRootfs() {
 
 createUser() {
   cd rootfs
-
   echo "root:x:0:0::/root:/usr/bin/bash" > etc/passwd
   echo "root:x:0:root" > etc/group
   ROOT_PASSWORD="root"

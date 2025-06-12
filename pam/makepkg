@@ -1,0 +1,43 @@
+#!/bin/bash
+NAME="pam"
+VERSION="1.7.0"
+TARBALL_URL="https://github.com/linux-pam/linux-pam/releases/download/v$VERSION/Linux-PAM-$VERSION.tar.xz"
+
+build() {
+  meson setup build \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --buildtype=release \
+    --libdir=/usr/lib \
+    -Dselinux=disabled \
+    -Ddocs=disabled
+
+  meson compile -C build -j"$JOBS"
+}
+
+install() {
+  meson install -C build --destdir "$INSTALLDIR"
+}
+
+configure() {
+  cd $ROOT_DIR/rootfs
+  mkdir -p etc/pam.d
+
+  for service in login su sudo agetty other; do
+    cat > etc/pam.d/$service <<EOF
+    #%PAM-1.0
+    auth     include  system-auth
+    account  include  system-auth
+    password include  system-auth
+    session  include  system-auth
+EOF
+done
+
+  cat > etc/pam.d/system-auth <<EOF
+#%PAM-1.0
+auth     required pam_permit.so
+account  required pam_permit.so
+password required pam_permit.so
+session  required pam_permit.so
+EOF
+}

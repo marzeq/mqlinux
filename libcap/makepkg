@@ -1,0 +1,16 @@
+#!/bin/bash
+NAME="libcap"
+VERSION="2.76"
+TARBALL_URL="https://git.kernel.org/pub/scm/libs/libcap/libcap.git/snapshot/libcap-$VERSION.tar.gz"
+
+build() {
+  make -j"$JOBS"
+}
+
+install() {
+  make install DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}

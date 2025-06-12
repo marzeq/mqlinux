@@ -1,0 +1,24 @@
+#!/bin/bash
+NAME="util-linux"
+VERSION="2.41"
+TARBALL_URL="https://github.com/util-linux/util-linux/archive/refs/tags/v$VERSION.tar.gz"
+
+build() {
+  ./autogen.sh
+  ./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --libdir=/usr/lib \
+    --disable-nls \
+    --without-systemd \
+    --without-python
+
+  make -j"$JOBS"
+}
+
+install() {
+  sudo make install-strip DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}

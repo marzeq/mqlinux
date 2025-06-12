@@ -1,0 +1,21 @@
+#!/bin/bash
+NAME="libaudit"
+VERSION="4.0.5"
+TARBALL_URL="https://github.com/linux-audit/audit-userspace/archive/refs/tags/v$VERSION.tar.gz"
+
+build() {
+  autoreconf -f --install
+  ./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --libdir=/usr/lib
+
+  make -j"$JOBS"
+}
+
+install() {
+  make install DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}
