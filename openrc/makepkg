@@ -47,21 +47,25 @@ nodev	mqueue
 nodev	autofs
 EOF
 
-  touch etc/fstab etc/inittab
-  cat > etc/inittab <<EOF
-# /etc/inittab for OpenRC
-::sysinit:/sbin/openrc sysinit
-::sysinit:/sbin/openrc boot
-::wait:/sbin/openrc default
-::shutdown:/sbin/openrc shutdown
-EOF
+#   touch etc/inittab
+#   cat > etc/inittab <<EOF
+# # /etc/inittab for OpenRC
+# ::sysinit:/sbin/openrc sysinit
+# ::sysinit:/sbin/openrc boot
+# ::wait:/sbin/openrc default
+# ::shutdown:/sbin/openrc shutdown
+# EOF
 
+  touch etc/fstab
   cat > etc/fstab <<EOF
 # <file system> <mount point> <type> <options> <dump> <pass>
 proc /proc proc defaults 0 0
 sysfs /sys sysfs defaults 0 0
 tmpfs /tmp tmpfs defaults 0 0
 EOF
+
+  touch etc/hostname
+  echo "localhost" > etc/hostname
 
   cd etc/init.d
   for n in {1..12}; do
