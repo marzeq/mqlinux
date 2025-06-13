@@ -4,6 +4,8 @@ VERSION="0.62.2"
 TARBALL_URL="https://github.com/OpenRC/openrc/archive/refs/tags/$VERSION.tar.gz"
 
 build() {
+  rm -rf build
+  mkdir -p build
   meson setup build \
     --prefix=/usr \
     --sysconfdir=/etc \
@@ -58,12 +60,11 @@ EOF
 # <file system> <mount point> <type> <options> <dump> <pass>
 proc /proc proc defaults 0 0
 sysfs /sys sysfs defaults 0 0
-devtmpfs /dev devtmpfs defaults 0 0
 tmpfs /tmp tmpfs defaults 0 0
 EOF
 
   cd etc/init.d
-  for n in {0..12}; do
+  for n in {1..12}; do
     ln -sf agetty agetty.tty$n
     ln -sf "/etc/init.d/agetty.tty$n" "$ROOT_DIR/rootfs/etc/runlevels/default/agetty.tty$n"
   done

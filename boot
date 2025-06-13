@@ -2,6 +2,7 @@
 nographic=false
 kernelimage="bzImage"
 initrdimage="init.cpio"
+init="/sbin/openrc-init"
 
 for arg in "$@"; do
   if [ "$arg" = "-nog" ]; then
@@ -10,6 +11,11 @@ for arg in "$@"; do
     kernelimage="${arg#-kernel=}"
   elif [[ "$arg" == "-initrd="* ]]; then
     initrdimage="${arg#-initrd=}"
+  elif [[ "$arg" == "-init="* ]]; then
+    init="${arg#-init=}"
+  else
+    echo "Unknown argument: $arg"
+    exit 1
   fi
 done
 
@@ -17,7 +23,7 @@ if [ "$nographic" = true ]; then
   qemu-system-x86_64 \
     -kernel "$kernelimage" \
     -initrd "$initrdimage" \
-    -append "console=ttyS0 root=/dev/ram rdinit=/sbin/openrc-init" \
+    -append "console=ttyS0 root=/dev/ram rdinit=$init" \
     -m 1024M \
     -nographic \
     -netdev user,id=net0,hostfwd=tcp::2222-:22 \
@@ -26,7 +32,7 @@ else
   qemu-system-x86_64 \
     -kernel "$kernelimage" \
     -initrd "$initrdimage" \
-    -append "console=tty0 root=/dev/ram rdinit=/sbin/openrc-init" \
+    -append "console=tty0 root=/dev/ram rdinit=$init" \
     -m 1024M \
     -netdev user,id=net0,hostfwd=tcp::2222-:22 \
     -device e1000,netdev=net0

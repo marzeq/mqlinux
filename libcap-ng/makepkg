@@ -4,6 +4,7 @@ VERSION="0.8.5"
 TARBALL_URL="https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v$VERSION.tar.gz"
 
 build() {
+  make distclean
   ./autogen.sh
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
 

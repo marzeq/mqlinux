@@ -1,0 +1,18 @@
+#!/bin/bash
+NAME="libnsl"
+VERSION="2.0.1"
+TARBALL_URL="https://github.com/thkukuk/libnsl/releases/download/v$VERSION/libnsl-$VERSION.tar.xz"
+
+build() {
+  make distclean
+  ./configure --prefix=/usr --libdir=/usr/lib --disable-static
+  make -j"$JOBS"
+}
+
+install() {
+  make DESTDIR="$INSTALLDIR" install
+}
+
+configure() {
+  :
+}

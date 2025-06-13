@@ -31,10 +31,15 @@ prepareRootfs() {
   sudo mkdir -m 755 rootfs/dev/pts
   sudo mkdir -m 1777 rootfs/dev/shm
 
+  mkdir -p rootfs/var/{cache,log,run,spool,mail}
+  touch rootfs/var/run/utmp rootfs/var/log/wtmp
+  sudo chown root:utmp rootfs/var/run/utmp rootfs/var/log/wtmp
+  sudo chmod 664 rootfs/var/run/utmp rootfs/var/log/wtmp
+
   sudo mknod -m 666 rootfs/dev/tty c 5 0
   sudo mknod -m 666 rootfs/dev/ttyAMA0 c 204 64
   for x in {0..12}; do
-    sudo mknod -m 620 rootfs/dev/tty$x c 4 $x
+    sudo mknod -m 660 rootfs/dev/tty$x c 4 $x
   done
 }
 
@@ -44,14 +49,16 @@ createUser() {
   sudo chroot . /bin/sh -c "addgroup -g 0 root"
   sudo chroot . /bin/sh -c "adduser -g '' -D -u 0 -G root -s /bin/sh -h /root root"
   ROOTPSWD="root"
-  sudo chroot . /bin/sh -c "echo root:$ROOTPSWD | chpasswd"
+  sudo chroot . /bin/sh -c "echo root:$ROOTPSWD | chpasswd -c SHA512"
+  chmod 644 etc/passwd etc/group
   chmod 600 etc/shadow
+  sudo chown root:root etc/passwd etc/group etc/shadow
   cd "$ROOT_DIR"
 }
 
 createInitramfs() {
   cd rootfs
-  find . | cpio -H newc -o > $ROOT_DIR/init.cpio
+  find . | sudo cpio -H newc -o > $ROOT_DIR/init.cpio
   cd $ROOT_DIR
 }
 
@@ -79,6 +86,11 @@ preparePackageSrcDir() {
     local tarball_name="${name}-${version}.tar.gz"
   elif [[ "$url" =~ \.tar\.xz$ ]]; then
     local tarball_name="${name}-${version}.tar.xz"
+  elif [[ "$url" =~ \.tar\.bz2$ ]]; then
+    local tarball_name="${name}-${version}.tar.bz2"
+  else
+    echo "Error: Unsupported tarball format for $name."
+    exit 1
   fi
 
   getPackageTarball "$name" "$version" "$url" "$tarball_name"
@@ -88,7 +100,7 @@ preparePackageSrcDir() {
   if [[ ! -d "$name-$version" ]]; then
     tar -xf "$tarball_name"
 
-    if [[ $(ls -d */ | wc -l) -ne 1 ]]; then
+    if [[ $(ls -d */ | grep -v "install/" | wc -l) -ne 1 ]]; then
       echo "Error: Expected exactly one directory in the current directory. Package tarball may be malformed."
       exit 1
     fi
@@ -110,7 +122,12 @@ getPackageBuildHash() {
   local url="$3"
 
   source "$name/makepkg"
-  local build_hash=$(declare -f build install | sha256sum | awk '{print $1}')
+  local config_contents=""
+  if [[ -f "$name/.config" ]]; then
+    config_contents=$(cat "$name/.config")
+  fi
+  local build_hash_input="$config_contents$VERSION$(declare -f build install)"
+  local build_hash=$(echo $build_hash_input | sha256sum | awk '{print $1}')
   NAME=""
   VERSION=""
   TARBALL_URL=""
@@ -162,7 +179,7 @@ buildPackageIfNeeded() {
 
   set -x
   export INSTALLDIR="$ROOT_DIR/$name/install"
-  rm -rf "$INSTALLDIR"
+  sudo rm -rf "$INSTALLDIR"
   mkdir -p "$INSTALLDIR"
   install
   export INSTALLDIR=""
@@ -234,6 +251,9 @@ INSTALL_ORDER=(
   "libcap"
   "libcap-ng"
   "libaudit"
+  "libxcrypt"
+  "libtirpc"
+  "libnsl"
   "pam"
   "util-linux"
   "kbd"

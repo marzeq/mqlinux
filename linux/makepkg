@@ -4,8 +4,7 @@ VERSION="6.15.2"
 TARBALL_URL="https://cdn.kernel.org/pub/linux/kernel/v$(echo "$VERSION" | cut -d. -f1).x/linux-$VERSION.tar.xz"
 
 build() {
-  make defconfig
-  scripts/config --enable CONFIG_64BIT
+  cp ../.config .config
 
   make -j"$JOBS"
 }

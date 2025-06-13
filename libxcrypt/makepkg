@@ -1,0 +1,27 @@
+#!/bin/bash
+NAME="libxcrypt"
+VERSION="4.4.38"
+TARBALL_URL="https://github.com/besser82/libxcrypt/releases/download/v$VERSION/libxcrypt-$VERSION.tar.xz"
+
+build() {
+  rm -rf build build-compat
+  mkdir -p build build-compat
+  cd build
+  ../configure --prefix=/usr --libdir=/usr/lib --enable-obsolete-api=no
+  make -j"$JOBS"
+  cd ../build-compat
+  ../configure --prefix=/usr --libdir=/usr/lib --enable-obsolete-api=glibc
+  make -j"$JOBS"
+  cd ..
+}
+
+install() {
+  cd build
+  make DESTDIR="$INSTALLDIR" install
+  cd ../build-compat
+  make DESTDIR="$INSTALLDIR" install
+}
+
+configure() {
+  :
+}
