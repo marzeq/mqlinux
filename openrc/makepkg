@@ -70,11 +70,13 @@ EOF
   cd etc/init.d
   for n in {1..12}; do
     ln -sf agetty agetty.tty$n
-    ln -sf "/etc/init.d/agetty.tty$n" "$ROOT_DIR/rootfs/etc/runlevels/default/agetty.tty$n"
   done
   cd "$ROOT_DIR/rootfs"
 
   cd "etc/runlevels"
+  for n in {1..12}; do
+    ln -s /etc/init.d/agetty.tty$n default/ || true
+  done
   ln -s /etc/init.d/udev sysinit/ || true
   ln -s /etc/init.d/udev-trigger sysinit/ || true
   ln -s /etc/init.d/devfs sysinit/ || true
