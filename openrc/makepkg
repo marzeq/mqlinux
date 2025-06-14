@@ -86,4 +86,5 @@ EOF
   ln -s /etc/init.d/sysfs boot/ || true
   ln -s /etc/init.d/modules boot/ || true
   ln -s /etc/init.d/hwclock boot/ || true
+  unlink default/netmount || true
 }
