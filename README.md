@@ -45,4 +45,4 @@ This will build all components and produce a bootable root filesystem and initra
 
 This project (in particular, the `make` script and each package `makepkg` script and accompanying files) is licensed under the GPL-3.0 License.
 
-See the [LICENSE](LICENSE) file for details.
+See the [LICENSE.md](LICENSE.md) file for details.
