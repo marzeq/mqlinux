@@ -23,4 +23,5 @@ configure() {
   cd "$ROOT_DIR/rootfs"
   sudo chown root:root "bin/login"
   sudo chmod 755 "bin/login"
+  ln -s /proc/self/mounts etc/mtab
 }
