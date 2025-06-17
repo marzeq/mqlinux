@@ -4,8 +4,6 @@ VERSION="1.7.0"
 TARBALL_URL="https://github.com/linux-pam/linux-pam/releases/download/v$VERSION/Linux-PAM-$VERSION.tar.xz"
 
 build() {
-  rm -rf build
-  mkdir -p build
   meson setup build \
     --prefix=/usr \
     --sysconfdir=/etc \

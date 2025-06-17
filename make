@@ -98,7 +98,7 @@ preparePackageSrcDir() {
 
   cd "$name"
 
-  if [[ ! -d "$name-$version" ]]; then
+  if [[ ! -d "$name-$version-src" ]]; then
     tar -xf "$tarball_name"
 
     if [[ $(ls -d */ | grep -v "install/" | wc -l) -ne 1 ]]; then
@@ -106,11 +106,11 @@ preparePackageSrcDir() {
       exit 1
     fi
 
-    local src_dir=$(ls -d */ | head -n 1)
+    local src_dir=$(ls -d */ | grep -v "install/" | head -n 1)
 
-    if [[ "$src_dir" != "$name-$version/" ]]; then
-      echo "Renaming directory $src_dir to ${name}-$version"
-      mv "$src_dir" "${name}-$version"
+    if [[ "$src_dir" != "$name-$version-src/" ]]; then
+      echo "Renaming directory $src_dir to $name-$version-src"
+      mv "$src_dir" "$name-$version-src"
     fi
   fi
 
@@ -168,7 +168,7 @@ buildPackageIfNeeded() {
 
   source "$name/makepkg"
 
-  cd "$name/$name-$version"
+  cd "$name/$name-$version-src"
 
   echo "Building $name version $version..."
 
@@ -176,7 +176,7 @@ buildPackageIfNeeded() {
   build
   set +x
 
-  cd "$ROOT_DIR/$name/$name-$version"
+  cd "$ROOT_DIR/$name/$name-$version-src"
 
   set -x
   export INSTALLDIR="$ROOT_DIR/$name/install"
@@ -190,6 +190,8 @@ buildPackageIfNeeded() {
   VERSION=""
   TARBALL_URL=""
   unset -f build install configure
+
+  rm -rf "$ROOT_DIR/$name/$name-$version-src"
 
   cd "$ROOT_DIR"
 
@@ -285,6 +287,21 @@ main() {
   createUser
   sudo chown -R root:root rootfs
   createInitramfs
+
+  echo
+  echo
+  init_size=$(du -sh init.cpio | awk '{print $1}')
+  echo "Initramfs ($init_size) - $ROOT_DIR/init.cpio"
+
+  kernel_size=$(du -sh bzImage | awk '{print $1}')
+  echo "Kernel ($kernel_size) - $ROOT_DIR/bzImage"
+
+  total_size=$(du -cb init.cpio bzImage | grep total | awk '{print $1}')
+  human_total=$(numfmt --to=iec $total_size)
+  echo "Total - $human_total"
+
+  echo
+  echo "Run ./boot to test the system using QEMU, or package the kernel, initramfs and a bootloader to create a bootable image."
 }
 
 main "$@"

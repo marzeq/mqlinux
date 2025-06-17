@@ -4,8 +4,6 @@ VERSION="0.62.2"
 TARBALL_URL="https://github.com/OpenRC/openrc/archive/refs/tags/$VERSION.tar.gz"
 
 build() {
-  rm -rf build
-  mkdir -p build
   meson setup build \
     --prefix=/usr \
     --sysconfdir=/etc \
