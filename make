@@ -59,7 +59,7 @@ createUser() {
 
 createInitramfs() {
   cd rootfs
-  find . | sudo cpio -H newc -o > $ROOT_DIR/init.cpio
+  sudo find . | sudo cpio -H newc -o > $ROOT_DIR/init.cpio
   cd $ROOT_DIR
 }
 
@@ -208,9 +208,9 @@ installPackage() {
   local version="$2"
   local url="$3"
 
-  if [[ ! -f "$name/build.done" ]]; then
-    echo "Error: Package $name version $version has not been built yet."
-    exit 1
+  if [[ ! -f "$name/build.done" ]] || [[ ! -d "$name/install" ]]; then
+    rm -f "$name/build.done"
+    buildPackageIfNeeded "$name" "$version" "$url"
   fi
 
   cd "$name"
@@ -283,6 +283,7 @@ main() {
   done
 
   createUser
+  sudo chown -R root:root rootfs
   createInitramfs
 }
 
