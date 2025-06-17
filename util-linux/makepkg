@@ -4,6 +4,7 @@ VERSION="2.41"
 TARBALL_URL="https://github.com/util-linux/util-linux/archive/refs/tags/v$VERSION.tar.gz"
 
 build() {
+  cd "$SRCDIR"
   ./autogen.sh
   ./configure --prefix=/usr \
     --sysconfdir=/etc \
@@ -15,13 +16,13 @@ build() {
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   sudo make install-strip DESTDIR="$INSTALLDIR"
 }
 
 configure() {
-  cd "$ROOT_DIR/rootfs"
-  sudo chown root:root "bin/login"
-  sudo chmod 755 "bin/login"
+  cd "$INSTALLDIR"
+  mkdir -p etc
   ln -s /proc/self/mounts etc/mtab
 }

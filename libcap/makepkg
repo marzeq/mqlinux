@@ -4,10 +4,12 @@ VERSION="2.76"
 TARBALL_URL="https://git.kernel.org/pub/scm/libs/libcap/libcap.git/snapshot/libcap-$VERSION.tar.gz"
 
 build() {
+  cd "$SRCDIR"
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   make install DESTDIR="$INSTALLDIR"
 }
 

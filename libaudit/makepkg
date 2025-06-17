@@ -4,6 +4,7 @@ VERSION="4.0.5"
 TARBALL_URL="https://github.com/linux-audit/audit-userspace/archive/refs/tags/v$VERSION.tar.gz"
 
 build() {
+  cd "$SRCDIR"
   autoreconf -f --install
   ./configure --prefix=/usr \
     --sysconfdir=/etc \
@@ -12,7 +13,8 @@ build() {
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   make install DESTDIR="$INSTALLDIR"
 }
 

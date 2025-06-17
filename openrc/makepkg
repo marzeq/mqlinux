@@ -4,6 +4,7 @@ VERSION="0.62.2"
 TARBALL_URL="https://github.com/OpenRC/openrc/archive/refs/tags/$VERSION.tar.gz"
 
 build() {
+  cd "$SRCDIR"
   meson setup build \
     --prefix=/usr \
     --sysconfdir=/etc \
@@ -13,65 +14,29 @@ build() {
   meson compile -C build -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   meson install -C build --destdir "$INSTALLDIR"
 }
 
 configure() {
-  cd $ROOT_DIR/rootfs
+  cd "$INSTALLDIR"
 
   ln -s /usr/bin/openrc-init sbin/init
 
-  mkdir -p etc/init.d var/cache/rc run/openrc etc/runlevels/{boot,sysinit,default,shutdown} proc sys
+  mkdir -p etc etc/init.d var/cache/rc run/openrc etc/runlevels/{boot,sysinit,default,shutdown} proc
   
-  cat > "proc/filesystems" <<EOF
-nodev	sysfs
-nodev	rootfs
-nodev	ramfs
-nodev	bdev
-nodev	proc
-nodev	cgroup
-nodev	cgroup2
-nodev	tmpfs
-nodev	devtmpfs
-nodev	debugfs
-nodev	securityfs
-nodev	sockfs
-nodev	pipefs
-nodev	devpts
-nodev	hugetlbfs
-nodev	pstore
-nodev	mqueue
-nodev	autofs
-EOF
+  install -Dm644 $PKGDIR/fstab etc/fstab
 
-#   touch etc/inittab
-#   cat > etc/inittab <<EOF
-# # /etc/inittab for OpenRC
-# ::sysinit:/sbin/openrc sysinit
-# ::sysinit:/sbin/openrc boot
-# ::wait:/sbin/openrc default
-# ::shutdown:/sbin/openrc shutdown
-# EOF
-
-  touch etc/fstab
-  cat > etc/fstab <<EOF
-# <file system> <mount point> <type> <options> <dump> <pass>
-proc /proc proc defaults 0 0
-sysfs /sys sysfs defaults 0 0
-tmpfs /tmp tmpfs defaults 0 0
-EOF
-
-  touch etc/hostname
   echo "localhost" > etc/hostname
 
   cd etc/init.d
   for n in {1..12}; do
     ln -sf agetty agetty.tty$n
   done
-  cd "$ROOT_DIR/rootfs"
+  cd "$INSTALLDIR"
 
-  cd "etc/runlevels"
+  cd etc/runlevels
   for n in {1..12}; do
     ln -s /etc/init.d/agetty.tty$n default/ || true
   done

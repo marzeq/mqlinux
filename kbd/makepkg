@@ -4,11 +4,13 @@ VERSION="2.8.0"
 TARBALL_URL="https://www.kernel.org/pub/linux/utils/kbd/kbd-$VERSION.tar.xz"
 
 build() {
+  cd "$SRCDIR"
   ./configure --prefix=/usr --libdir=/usr/lib
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   make install DESTDIR="$INSTALLDIR"
 }
 

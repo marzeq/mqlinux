@@ -4,6 +4,7 @@ VERSION="4.4.38"
 TARBALL_URL="https://github.com/besser82/libxcrypt/releases/download/v$VERSION/libxcrypt-$VERSION.tar.xz"
 
 build() {
+  cd "$SRCDIR"
   rm -rf build build-compat
   mkdir -p build build-compat
   cd build
@@ -15,7 +16,8 @@ build() {
   cd ..
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   cd build
   make DESTDIR="$INSTALLDIR" install
   cd ../build-compat

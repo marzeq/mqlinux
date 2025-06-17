@@ -127,12 +127,12 @@ getPackageBuildHash() {
   if [[ -f "$name/.config" ]]; then
     config_contents=$(cat "$name/.config")
   fi
-  local build_hash_input="$config_contents$VERSION$(declare -f build install)"
+  local build_hash_input="$config_contents$VERSION$(declare -f build package configure)"
   local build_hash=$(echo $build_hash_input | sha256sum | awk '{print $1}')
   NAME=""
   VERSION=""
   TARBALL_URL=""
-  unset -f build install configure
+  unset -f build package configure
 
   echo "$build_hash"
 }
@@ -168,32 +168,39 @@ buildPackageIfNeeded() {
 
   source "$name/makepkg"
 
-  cd "$name/$name-$version-src"
-
   echo "Building $name version $version..."
+
+  export INSTALLDIR="$ROOT_DIR/$name/install"
+  export SRCDIR="$ROOT_DIR/$name/$name-$version-src"
+  export PKGDIR="$ROOT_DIR/$name"
 
   set -x
   build
   set +x
+  cd "$ROOT_DIR"
 
-  cd "$ROOT_DIR/$name/$name-$version-src"
-
-  set -x
-  export INSTALLDIR="$ROOT_DIR/$name/install"
   sudo rm -rf "$INSTALLDIR"
   mkdir -p "$INSTALLDIR"
-  install
-  export INSTALLDIR=""
+
+  set -x
+  package
   set +x
+  cd "$ROOT_DIR"
+
+  set -x
+  configure
+  set +x
+  cd "$ROOT_DIR"
 
   NAME=""
   VERSION=""
   TARBALL_URL=""
-  unset -f build install configure
+  unset -f build package configure
+  export INSTALLDIR=""
+  export SRCDIR=""
+  export PKGDIR=""
 
-  rm -rf "$ROOT_DIR/$name/$name-$version-src"
-
-  cd "$ROOT_DIR"
+  rm -rf "$name/$name-$version-src"
 
   echo "Build completed for $name version $version."
 
@@ -201,8 +208,6 @@ buildPackageIfNeeded() {
   echo "$build_hash" > "$name/build.done"
 
   echo "Build hash for $name version $version saved."
-
-  cd "$ROOT_DIR"
 }
 
 installPackage() {
@@ -220,29 +225,6 @@ installPackage() {
   rsync -a --keep-dirlinks install/ "$ROOT_DIR/rootfs/"
 
   echo "Installation completed for $name version $version."
-  cd "$ROOT_DIR"
-}
-
-configurePackage() {
-  local name="$1"
-  local version="$2"
-  local url="$3"
-
-  if [[ ! -f "$name/build.done" ]]; then
-    echo "Error: Package $name version $version has not been built yet."
-    exit 1
-  fi
-
-  source "$name/makepkg"
-  echo "Configuring $name version $version..."
-  set -x
-  configure
-  set +x
-  echo "Configuration completed for $name version $version."
-  NAME=""
-  VERSION=""
-  TARBALL_URL=""
-  unset -f build install configure
   cd "$ROOT_DIR"
 }
 
@@ -276,19 +258,18 @@ main() {
     NAME=""
     VERSION=""
     TARBALL_URL=""
-    unset -f build install configure
+    unset -f build package configure
 
     preparePackageSrcDir "$name" "$version" "$tarball_url"
     buildPackageIfNeeded "$name" "$version" "$tarball_url"
     installPackage "$name" "$version" "$tarball_url"
-    configurePackage "$name" "$version" "$tarball_url"
+    echo
   done
 
   createUser
   sudo chown -R root:root rootfs
   createInitramfs
 
-  echo
   echo
   init_size=$(du -sh init.cpio | awk '{print $1}')
   echo "Initramfs ($init_size) - $ROOT_DIR/init.cpio"

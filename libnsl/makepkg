@@ -4,11 +4,13 @@ VERSION="2.0.1"
 TARBALL_URL="https://github.com/thkukuk/libnsl/releases/download/v$VERSION/libnsl-$VERSION.tar.xz"
 
 build() {
+  cd "$SRCDIR"
   ./configure --prefix=/usr --libdir=/usr/lib --disable-static
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   make DESTDIR="$INSTALLDIR" install
 }
 

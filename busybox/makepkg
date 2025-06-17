@@ -4,12 +4,14 @@ VERSION="1.36.1"
 TARBALL_URL="https://github.com/mirror/busybox/archive/refs/tags/$(echo "$VERSION" | sed 's/\./_/g').tar.gz"
 
 build() {
+  cd "$SRCDIR"
   cp ../.config .config
 
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   make CONFIG_PREFIX="$INSTALLDIR" install
 }
 

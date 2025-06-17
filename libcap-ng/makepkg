@@ -4,13 +4,15 @@ VERSION="0.8.5"
 TARBALL_URL="https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v$VERSION.tar.gz"
 
 build() {
+  cd "$SRCDIR"
   ./autogen.sh
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
 
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   make install DESTDIR="$INSTALLDIR"
 }
 

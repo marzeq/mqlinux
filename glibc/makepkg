@@ -4,6 +4,7 @@ VERSION="2.41"
 TARBALL_URL="https://ftpmirror.gnu.org/glibc/glibc-$VERSION.tar.xz"
 
 build() {
+  cd "$SRCDIR"
   mkdir -p build
   cd build
 
@@ -16,7 +17,8 @@ build() {
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   cd build
   make install DESTDIR="$INSTALLDIR"
 }

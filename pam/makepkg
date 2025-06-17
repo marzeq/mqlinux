@@ -4,6 +4,7 @@ VERSION="1.7.0"
 TARBALL_URL="https://github.com/linux-pam/linux-pam/releases/download/v$VERSION/Linux-PAM-$VERSION.tar.xz"
 
 build() {
+  cd "$SRCDIR"
   meson setup build \
     --prefix=/usr \
     --sysconfdir=/etc \
@@ -14,33 +15,19 @@ build() {
   meson compile -C build -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   meson install -C build --destdir "$INSTALLDIR"
 }
 
 configure() {
-  cd $ROOT_DIR/rootfs
+  cd "$INSTALLDIR"
 
-  chmod +s usr/bin/unix_chkpwd
-  sudo chown root:root "usr/sbin/unix_chkpwd"
-  sudo chmod 4755 "usr/sbin/unix_chkpwd"
-
-  mkdir -p etc/pam.d
+  mkdir -p etc etc/pam.d
 
   for service in login su sudo agetty other; do
-    cat > etc/pam.d/$service <<EOF
-#%PAM-1.0
-auth     required  pam_unix.so debug
-account  required  pam_unix.so debug
-password required  pam_unix.so debug
-session  required  pam_unix.so debug
-EOF
-    chmod 644 etc/pam.d/$service
+    install -Dm644 $PKGDIR/pam-service etc/pam.d/$service
   done
 
-  cat > etc/nsswitch.conf <<EOF
-passwd: files
-group:  files
-shadow: files
-EOF
+  install -Dm644 $PKGDIR/nsswitch.conf etc/nsswitch.conf
 }

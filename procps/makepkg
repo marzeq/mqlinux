@@ -4,12 +4,14 @@ VERSION="4.0.5"
 TARBALL_URL="https://gitlab.com/procps-ng/procps/-/archive/v$VERSION/procps-v$VERSION.tar.gz"
 
 build() {
+  cd "$SRCDIR"
   ./autogen.sh
   ./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
   make -j"$JOBS"
 }
 
-install() {
+package() {
+  cd "$SRCDIR"
   make install DESTDIR="$INSTALLDIR"
 }
 
