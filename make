@@ -22,13 +22,12 @@ prepareRootfs() {
   mkdir -p rootfs/{root,home,mnt,lib/modules}
   chmod 1777 rootfs/tmp rootfs/run
 
-  sudo mkdir -m 755 rootfs/dev/pts
-  sudo mkdir -m 1777 rootfs/dev/shm
+  mkdir -m 755 rootfs/dev/pts
+  mkdir -m 1777 rootfs/dev/shm
 
   mkdir -p rootfs/var/{cache,log,run,spool,mail}
   touch rootfs/var/run/utmp rootfs/var/log/wtmp
-  sudo chown root:utmp rootfs/var/run/utmp rootfs/var/log/wtmp
-  sudo chmod 664 rootfs/var/run/utmp rootfs/var/log/wtmp
+  chmod 664 rootfs/var/run/utmp rootfs/var/log/wtmp
 }
 
 setupUsers() {
@@ -261,6 +260,7 @@ main() {
 
   setupUsers "${users_to_create[@]}"
   sudo chown -R root:root rootfs
+  sudo chown root:utmp rootfs/var/run/utmp rootfs/var/log/wtmp
   createInitramfs
 
   echo
