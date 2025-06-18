@@ -31,7 +31,7 @@ This will build all components and produce a bootable root filesystem and initra
 
 ## TODO
 
-- [ ] Get networking working
+- [x] Get networking working
 - [ ] Modify the build process to produce tarballs of each package, effectively making a proto-package manager
   - [ ] Transform the proto-package manager into a full package manager and bundle it with the root filesystem
 - [ ] Transition from `busybox` to `GNU coreutils`

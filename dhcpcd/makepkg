@@ -1,0 +1,31 @@
+#!/bin/bash
+NAME="dhcpcd"
+VERSION="10.2.4"
+TARBALL_URL="https://github.com/NetworkConfiguration/${NAME}/releases/download/v${VERSION}/${NAME}-${VERSION}.tar.xz"
+
+LOCAL_USER="$NAME"
+
+build() {
+  cd "$SRCDIR"
+  ./configure --dbdir="/var/lib/$pkgname" \
+    --libexecdir="/usr/lib/$pkgname" \
+    --prefix="/usr" \
+    --privsepuser=$pkgname \
+    --runstatedir="/run" \
+    --sbindir="/usr/bin" \
+    --sysconfdir="/etc" \
+    --with-openssl
+
+  make -j"$JOBS"
+}
+
+package() {
+  cd "$SRCDIR"
+  make install DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  mkdir -p "$INSTALLDIR/etc/init.d" "$INSTALLDIR/etc/runlevels/default"
+  install -Dm755 $PKGDIR/dhcpcd-service "$INSTALLDIR/etc/init.d/dhcpcd"
+  ln -s /etc/init.d/dhcpcd "$INSTALLDIR/etc/runlevels/default/dhcpcd"
+}

@@ -21,13 +21,6 @@ prepareRootfs() {
   mkdir -p rootfs/{root,home,mnt,lib/modules}
   chmod 1777 rootfs/tmp rootfs/run
 
-  sudo mknod -m 666 rootfs/dev/null c 1 3
-  sudo mknod -m 666 rootfs/dev/zero c 1 5
-  sudo mknod -m 666 rootfs/dev/full c 1 7
-  sudo mknod -m 666 rootfs/dev/random c 1 8
-  sudo mknod -m 666 rootfs/dev/urandom c 1 9
-  sudo mknod -m 600 rootfs/dev/console c 5 1
-  sudo mknod -m 666 rootfs/dev/ptmx c 5 2
   sudo mkdir -m 755 rootfs/dev/pts
   sudo mkdir -m 1777 rootfs/dev/shm
 
@@ -35,22 +28,27 @@ prepareRootfs() {
   touch rootfs/var/run/utmp rootfs/var/log/wtmp
   sudo chown root:utmp rootfs/var/run/utmp rootfs/var/log/wtmp
   sudo chmod 664 rootfs/var/run/utmp rootfs/var/log/wtmp
-
-  sudo mknod -m 666 rootfs/dev/tty c 5 0
-  sudo mknod -m 666 rootfs/dev/ttyAMA0 c 204 64
-  for x in {0..12}; do
-    sudo mknod -m 660 rootfs/dev/tty$x c 4 $x
-  done
 }
 
-createUser() {
+setupUsers() {
+  local users=("$@")
+
   cd rootfs
   touch etc/group etc/passwd etc/shadow
   sudo chroot . /bin/sh -c "addgroup -g 0 root"
   sudo chroot . /bin/sh -c "addgroup -g 10 uucp"
-  sudo chroot . /bin/sh -c "adduser -g '' -D -u 0 -G root -s /bin/sh -h /root root"
+  sudo chroot . /bin/sh -c "adduser -g '' -G root -s /bin/sh -h /root   -u 0    root -D"
   ROOTPSWD="root"
   sudo chroot . /bin/sh -c "echo root:$ROOTPSWD | chpasswd -c SHA512"
+
+  for user in $users; do
+    if [[ -z "$user" ]]; then
+      continue
+    fi
+    sudo chroot . /bin/sh -c "addgroup -g 900 $user"
+    sudo chroot . /bin/sh -c "adduser -g '' -G $user -s /usr/bin/nologin -h / -u 900     $user -D"
+  done
+
   chmod 644 etc/passwd etc/group
   chmod 600 etc/shadow
   sudo chown root:root etc/passwd etc/group etc/shadow
@@ -127,12 +125,8 @@ getPackageBuildHash() {
   if [[ -f "$name/.config" ]]; then
     config_contents=$(cat "$name/.config")
   fi
-  local build_hash_input="$config_contents$VERSION$(declare -f build package configure)"
+  local build_hash_input="$config_contents$VERSION$LOCAL_USER$(declare -f build package configure)"
   local build_hash=$(echo $build_hash_input | sha256sum | awk '{print $1}')
-  NAME=""
-  VERSION=""
-  TARBALL_URL=""
-  unset -f build package configure
 
   echo "$build_hash"
 }
@@ -192,14 +186,6 @@ buildPackageIfNeeded() {
   set +x
   cd "$ROOT_DIR"
 
-  NAME=""
-  VERSION=""
-  TARBALL_URL=""
-  unset -f build package configure
-  export INSTALLDIR=""
-  export SRCDIR=""
-  export PKGDIR=""
-
   rm -rf "$name/$name-$version-src"
 
   echo "Build completed for $name version $version."
@@ -239,9 +225,16 @@ INSTALL_ORDER=(
   "libxcrypt"
   "libtirpc"
   "libnsl"
+  "kmod"
+  "zstd"
+  "xz"
+  "zlib"
+  "openssl"
+  "eudev"
   "pam"
   "util-linux"
   "kbd"
+  "dhcpcd"
   "busybox"
   "openrc"
 )
@@ -249,16 +242,17 @@ INSTALL_ORDER=(
 main() {
   prepareRootfs
 
+  local users_to_create=()
+
   for package in "${INSTALL_ORDER[@]}"; do
     cd "$ROOT_DIR"
     source "$package/makepkg"
+    if [[ -n "$LOCAL_USER" ]]; then
+      users_to_create+=("$LOCAL_USER")
+    fi
     local name="$NAME"
     local version="$VERSION"
     local tarball_url="$TARBALL_URL"
-    NAME=""
-    VERSION=""
-    TARBALL_URL=""
-    unset -f build package configure
 
     preparePackageSrcDir "$name" "$version" "$tarball_url"
     buildPackageIfNeeded "$name" "$version" "$tarball_url"
@@ -266,7 +260,7 @@ main() {
     echo
   done
 
-  createUser
+  setupUsers "${users_to_create[@]}"
   sudo chown -R root:root rootfs
   createInitramfs
 

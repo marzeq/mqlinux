@@ -1,0 +1,25 @@
+#!/bin/bash
+NAME="openssl"
+VERSION="3.5.0"
+TARBALL_URL=""https://github.com/${NAME}/${NAME}/releases/download/${NAME}-${VERSION}/${NAME}-${VERSION}.tar.gz""
+
+build() {
+  cd "$SRCDIR"
+  ./Configure linux-x86_64 \
+    --prefix=/usr \
+    --openssldir=/etc/ssl \
+    --libdir=lib \
+    no-tests
+
+  make depend
+  make -j"$JOBS"
+}
+
+package() {
+  cd "$SRCDIR"
+  make install_sw install_ssldirs DESTDIR="$INSTALLDIR"
+}
+
+configure() {
+  :
+}

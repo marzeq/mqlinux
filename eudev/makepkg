@@ -1,0 +1,41 @@
+#!/bin/bash
+NAME="eudev"
+VERSION="3.2.14"
+TARBALL_URL="https://github.com/eudev-project/${NAME}/releases/download/v${VERSION}/${NAME}-${VERSION}.tar.gz"
+
+build() {
+  cd "$SRCDIR"
+  ./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --with-rootlibdir=/usr/lib \
+    --with-rootlibexecdir=/usr/lib \
+    --disable-static
+
+  make -j"$JOBS"
+}
+
+package() {
+  cd "$SRCDIR"
+  make DESTDIR="$INSTALLDIR" install
+}
+
+configure() {
+  cd "$INSTALLDIR"
+  mkdir -p etc/init.d etc/conf.d
+
+  install -Dm755 "$PKGDIR/udev-service" "etc/init.d/udev"
+  install -Dm755 "$PKGDIR/udev-settle-service" "etc/init.d/udev-settle"
+  install -Dm755 "$PKGDIR/udev-trigger-service" "etc/init.d/udev-trigger"
+
+  install -Dm644 "$PKGDIR/udev-conf" "etc/conf.d/udev"
+  install -Dm644 "$PKGDIR/udev-settle-conf" "etc/init.d/udev-settle"
+  install -Dm644 "$PKGDIR/udev-trigger-conf" "etc/conf.d/udev-trigger"
+
+  mkdir -p etc/runlevels/sysinit
+  ln -sf /etc/init.d/udev etc/runlevels/sysinit/udev
+
+  mkdir -p usr/lib
+  install -Dm644 "$PKGDIR/libgcc_s.so" "usr/lib/libgcc_s.so.1"
+  install -Dm755 "$PKGDIR/libgcc_s.so.1" "usr/lib/libgcc_s.so.1"
+}

@@ -1,0 +1,24 @@
+#!/bin/bash
+NAME="xz"
+VERSION="5.8.1"
+TARBALL_URL="https://github.com/tukaani-project/xz/releases/download/v${VERSION}/${NAME}-${VERSION}.tar.xz"
+
+build() {
+  cd "$SRCDIR"
+  ./configure \
+    --prefix=/usr \
+    --disable-rpath \
+    --enable-doxygen \
+    --enable-werror
+
+  make -j"$JOBS"
+}
+
+package() {
+  cd "$SRCDIR"
+  make DESTDIR="$INSTALLDIR" install
+}
+
+configure() {
+  :
+}

@@ -1,7 +1,8 @@
 rootfs
 *.tar.gz
 *.tar.xz
-*/*-*
+*.tar.bz2
+*/*-src
 bzImage
 init.cpio*
 build.done

@@ -1,0 +1,32 @@
+#!/bin/bash
+NAME="zstd"
+VERSION="1.5.7"
+TARBALL_URL="https://github.com/facebook/zstd/releases/download/v${VERSION}/zstd-${VERSION}.tar.gz"
+
+build() {
+  cd "$SRCDIR"
+  export CFLAGS+=' -ffat-lto-objects'
+  export CXXFLAGS+=' -ffat-lto-objects'
+
+  cmake -S build/cmake -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DZSTD_ZLIB_SUPPORT=ON \
+    -DZSTD_LZMA_SUPPORT=ON \
+    -DZSTD_BUILD_CONTRIB=ON \
+    -DZSTD_BUILD_STATIC=OFF \
+    -DZSTD_BUILD_TESTS=OFF \
+    -DZSTD_PROGRAMS_LINK_SHARED=ON
+
+
+  cmake --build build
+}
+
+package() {
+  cd "$SRCDIR"
+  DESTDIR="$INSTALLDIR" cmake --install build
+}
+
+configure() {
+  :
+}
