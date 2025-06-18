@@ -12,7 +12,7 @@ build() {
     --libdir="/usr/lib" \
     --libexecdir="/usr/lib" \
     --enable-kernel=6.15 \
-    --with-headers="$ROOT_DIR/rootfs/usr/include"
+    --with-headers="/usr/include"
 
   make -j"$JOBS"
 }

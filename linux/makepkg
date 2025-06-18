@@ -12,11 +12,10 @@ build() {
 
 package() {
   cd "$SRCDIR"
-  cp arch/x86/boot/bzImage "$ROOT_DIR"
   mkdir -p "$INSTALLDIR/usr"
   make headers_install INSTALL_HDR_PATH="$INSTALLDIR/usr"
 }
 
 configure() {
-  :
+  cp "$SRCDIR"/arch/x86/boot/bzImage "$ROOTDIR"
 }

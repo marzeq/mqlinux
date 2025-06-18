@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-export ROOT_DIR=$(dirname "$(readlink -f "$0")")
-cd "$ROOT_DIR"
+export ROOTDIR=$(dirname "$(readlink -f "$0")")
+cd "$ROOTDIR"
 
 export JOBS=$(nproc)
 
@@ -52,13 +52,13 @@ setupUsers() {
   chmod 644 etc/passwd etc/group
   chmod 600 etc/shadow
   sudo chown root:root etc/passwd etc/group etc/shadow
-  cd "$ROOT_DIR"
+  cd "$ROOTDIR"
 }
 
 createInitramfs() {
   cd rootfs
-  sudo find . | sudo cpio -H newc -o > $ROOT_DIR/init.cpio
-  cd $ROOT_DIR
+  sudo find . | sudo cpio -H newc -o > $ROOTDIR/init.cpio
+  cd $ROOTDIR
 }
 
 getPackageTarball() {
@@ -73,7 +73,7 @@ getPackageTarball() {
     wget "$url" -O "$tarball_name"
   fi
 
-  cd "$ROOT_DIR"
+  cd "$ROOTDIR"
 }
 
 preparePackageSrcDir() {
@@ -112,7 +112,7 @@ preparePackageSrcDir() {
     fi
   fi
 
-  cd "$ROOT_DIR"
+  cd "$ROOTDIR"
 }
 
 getPackageBuildHash() {
@@ -164,27 +164,27 @@ buildPackageIfNeeded() {
 
   echo "Building $name version $version..."
 
-  export INSTALLDIR="$ROOT_DIR/$name/install"
-  export SRCDIR="$ROOT_DIR/$name/$name-$version-src"
-  export PKGDIR="$ROOT_DIR/$name"
+  export INSTALLDIR="$ROOTDIR/$name/install"
+  export SRCDIR="$ROOTDIR/$name/$name-$version-src"
+  export PKGDIR="$ROOTDIR/$name"
 
   set -x
   build
   set +x
-  cd "$ROOT_DIR"
+  cd "$ROOTDIR"
 
   sudo rm -rf "$INSTALLDIR"
   mkdir -p "$INSTALLDIR"
 
   set -x
-  package
+  fakeroot bash -c "$(declare -f package); package"
   set +x
-  cd "$ROOT_DIR"
+  cd "$ROOTDIR"
 
   set -x
-  configure
+  fakeroot bash -c "$(declare -f configure); configure"
   set +x
-  cd "$ROOT_DIR"
+  cd "$ROOTDIR"
 
   rm -rf "$name/$name-$version-src"
 
@@ -208,10 +208,10 @@ installPackage() {
 
   cd "$name"
   echo "Installing $name version $version..."
-  rsync -a --keep-dirlinks install/ "$ROOT_DIR/rootfs/"
+  rsync -a --keep-dirlinks install/ "$ROOTDIR/rootfs/"
 
   echo "Installation completed for $name version $version."
-  cd "$ROOT_DIR"
+  cd "$ROOTDIR"
 }
 
 INSTALL_ORDER=(
@@ -245,7 +245,7 @@ main() {
   local users_to_create=()
 
   for package in "${INSTALL_ORDER[@]}"; do
-    cd "$ROOT_DIR"
+    cd "$ROOTDIR"
     source "$package/makepkg"
     if [[ -n "$LOCAL_USER" ]]; then
       users_to_create+=("$LOCAL_USER")
@@ -266,10 +266,10 @@ main() {
 
   echo
   init_size=$(du -sh init.cpio | awk '{print $1}')
-  echo "Initramfs ($init_size) - $ROOT_DIR/init.cpio"
+  echo "Initramfs ($init_size) - $ROOTDIR/init.cpio"
 
   kernel_size=$(du -sh bzImage | awk '{print $1}')
-  echo "Kernel ($kernel_size) - $ROOT_DIR/bzImage"
+  echo "Kernel ($kernel_size) - $ROOTDIR/bzImage"
 
   total_size=$(du -cb init.cpio bzImage | grep total | awk '{print $1}')
   human_total=$(numfmt --to=iec $total_size)

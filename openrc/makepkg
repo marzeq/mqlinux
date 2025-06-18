@@ -33,12 +33,14 @@ configure() {
   cd etc/init.d
   for n in {1..12}; do
     ln -sf agetty agetty.tty$n
+    ln -sf agetty agetty.ttyyS$n
   done
   cd "$INSTALLDIR"
 
   cd etc/runlevels
   for n in {1..12}; do
     ln -s /etc/init.d/agetty.tty$n default/ || true
+    ln -s /etc/init.d/agetty.ttyyS$n default/ || true
   done
   ln -s /etc/init.d/udev sysinit/ || true
   ln -s /etc/init.d/udev-trigger sysinit/ || true
