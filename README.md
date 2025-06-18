@@ -1,4 +1,4 @@
-# basic-linux
+# mqlinux
 
 A minimal Linux system with an automated build process.
 
