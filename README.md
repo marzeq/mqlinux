@@ -36,7 +36,8 @@ This will build all components and produce a bootable root filesystem and initra
   - [ ] Transform the proto-package manager into a full package manager and bundle it with the root filesystem
 - [ ] Transition from `busybox` to `GNU coreutils`
 - [ ] Add more packages (e.g., `bash`, `zsh`, `vim`, `git`, etc.)
-- [ ] Use `udev` instead of a fixed `/dev` directory
+- [x] Use `udev` instead of a fixed `/dev` directory
+  - [ ] Stop cheating and build `libgcc_s.so` and `libgcc_s.so.1` from source, instead of copying them from the host system
 - [ ] Add a bootloader configuration and ability to make a bootable ISO
 - [ ] Add an install script to the ISO that can install the system to a disk
 - [ ] Move each package into its own repository
