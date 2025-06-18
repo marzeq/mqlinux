@@ -2,6 +2,7 @@
 set -e
 
 export ROOTDIR=$(dirname "$(readlink -f "$0")")
+PKGSDIR="$ROOTDIR/pkgs"
 cd "$ROOTDIR"
 
 export JOBS=$(nproc)
@@ -67,13 +68,9 @@ getPackageTarball() {
   local url="$3"
   local tarball_name="$4"
 
-  cd "$name"
-
-  if [[ ! -f "$tarball_name" ]]; then
-    wget "$url" -O "$tarball_name"
+  if [[ ! -f "$PKGSDIR/$name/$tarball_name" ]]; then
+    wget "$url" -O "$PKGSDIR/$name/$tarball_name"
   fi
-
-  cd "$ROOTDIR"
 }
 
 preparePackageSrcDir() {
@@ -94,7 +91,7 @@ preparePackageSrcDir() {
 
   getPackageTarball "$name" "$version" "$url" "$tarball_name"
 
-  cd "$name"
+  cd "$PKGSDIR/$name"
 
   if [[ ! -d "$name-$version-src" ]]; then
     tar -xf "$tarball_name"
@@ -120,10 +117,10 @@ getPackageBuildHash() {
   local version="$2"
   local url="$3"
 
-  source "$name/makepkg"
+  source "$PKGSDIR/$name/makepkg"
   local config_contents=""
-  if [[ -f "$name/.config" ]]; then
-    config_contents=$(cat "$name/.config")
+  if [[ -f "$PKGSDIR/$name/.config" ]]; then
+    config_contents=$(cat "$PKGSDIR/$name/.config")
   fi
   local build_hash_input="$config_contents$VERSION$LOCAL_USER$(declare -f build package configure)"
   local build_hash=$(echo $build_hash_input | sha256sum | awk '{print $1}')
@@ -138,11 +135,11 @@ packageNeedsBuilding() {
 
   local build_hash=$(getPackageBuildHash "$name" "$version" "$url")
   
-  if [[ ! -f "$name/build.done" ]]; then
+  if [[ ! -f "$PKGSDIR/$name/build.done" ]]; then
     return 0  # Package needs building
   fi
 
-  local build_done_hash=$(cat "$name/build.done")
+  local build_done_hash=$(cat "$PKGSDIR/$name/build.done")
   if [[ "$build_hash" != "$build_done_hash" ]]; then
     return 0  # Package needs building
   fi
@@ -160,33 +157,35 @@ buildPackageIfNeeded() {
     return
   fi
 
-  source "$name/makepkg"
+  source "$PKGSDIR/$name/makepkg"
 
   echo "Building $name version $version..."
 
-  export INSTALLDIR="$ROOTDIR/$name/install"
-  export SRCDIR="$ROOTDIR/$name/$name-$version-src"
-  export PKGDIR="$ROOTDIR/$name"
+  export INSTALLDIR="$PKGSDIR/$name/install"
+  export SRCDIR="$PKGSDIR/$name/$name-$version-src"
+  export PKGDIR="$PKGSDIR/$name"
 
+  cd "$PKGDIR"
   set -x
   build
   set +x
-  cd "$ROOTDIR"
 
+  cd "$PKGDIR"
   sudo rm -rf "$INSTALLDIR"
   mkdir -p "$INSTALLDIR"
 
   set -x
   fakeroot bash -c "$(declare -f package); package"
   set +x
-  cd "$ROOTDIR"
 
+  cd "$PKGDIR"
   set -x
   fakeroot bash -c "$(declare -f configure); configure"
   set +x
+
   cd "$ROOTDIR"
 
-  rm -rf "$name/$name-$version-src"
+  rm -rf "$SRCDIR"
 
   echo "Build completed for $name version $version."
 
@@ -201,12 +200,12 @@ installPackage() {
   local version="$2"
   local url="$3"
 
-  if [[ ! -f "$name/build.done" ]] || [[ ! -d "$name/install" ]]; then
-    rm -f "$name/build.done"
+  if [[ ! -f "$PKGSDIR/$name/build.done" ]] || [[ ! -d "$PKGSDIR/$name/install" ]]; then
+    rm -f "$PKGSDIR/$name/build.done"
     buildPackageIfNeeded "$name" "$version" "$url"
   fi
 
-  cd "$name"
+  cd "$PKGSDIR/$name"
   echo "Installing $name version $version..."
   rsync -a --keep-dirlinks install/ "$ROOTDIR/rootfs/"
 
@@ -246,7 +245,7 @@ main() {
 
   for package in "${INSTALL_ORDER[@]}"; do
     cd "$ROOTDIR"
-    source "$package/makepkg"
+    source "$PKGSDIR/$package/makepkg"
     if [[ -n "$LOCAL_USER" ]]; then
       users_to_create+=("$LOCAL_USER")
     fi

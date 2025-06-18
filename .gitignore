@@ -1,9 +1,9 @@
 rootfs
-*.tar.gz
-*.tar.xz
-*.tar.bz2
-*/*-src
+pkgs/*/*.tar.gz
+pkgs/*/*.tar.xz
+pkgs/*/*.tar.bz2
+pkgs/*/*-src
+pkgs/*/install/
 bzImage
 init.cpio*
 build.done
-install
