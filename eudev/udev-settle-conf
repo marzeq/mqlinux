@@ -1,17 +1,5 @@
-#!/sbin/openrc-run
-# Copyright 2014 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+# /etc/conf.d/udev-settle: config file for udev-settle
 
-depend() {
-	need udev
-	after udev-trigger
-	provide dev-settle
-	keyword -containers
-}
-
-start() {
-	ebegin "Waiting for uevents to be processed"
-	udevadm settle \
-		${udev_settle_timeout:+--timeout="${udev_settle_timeout}"}
-	eend $?
-}
+# Timeout in seconds to wait for processing of uevents at boot.
+# There should be no need to change this.
+#udev_settle_timeout=120
